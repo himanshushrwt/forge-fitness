@@ -9,6 +9,7 @@ let cron; try { cron = require('node-cron'); } catch {}
 dotenv.config();
 const app = express();
 
+// CORS - allow all origins
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -23,12 +24,14 @@ app.use('/api/exercises', require('./routes/exercises'));
 app.use('/api/progress',  require('./routes/progress'));
 app.use('/api/ai',        require('./routes/ai'));
 app.use('/api/admin',     require('./routes/admin'));
+app.use('/api/bookings',  require('./routes/bookings'));
+app.use('/api/dietplan',  require('./routes/dietplan'));
 const { usersRouter, remindersRouter } = require('./routes/users_reminders');
 app.use('/api/users',     usersRouter);
 app.use('/api/reminders', remindersRouter);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status:'ok', timestamp:new Date().toISOString(), db:mongoose.connection.readyState===1?'connected':'disconnected' });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
 });
 
 const connectDB = async () => {
@@ -42,19 +45,12 @@ const connectDB = async () => {
   }
 };
 
-// Seed admin account automatically
 const seedAdmin = async () => {
   try {
     const User = require('./models/User');
     const existing = await User.findOne({ email: 'admin@forge.fit' });
     if (!existing) {
-      const admin = new User({
-        name: 'Forge Admin',
-        email: 'admin@forge.fit',
-        password: 'Admin@123',
-        role: 'admin',
-        stats: { fitnessLevel: 'advanced' }
-      });
+      const admin = new User({ name: 'Forge Admin', email: 'admin@forge.fit', password: 'Admin@123', role: 'admin', stats: { fitnessLevel: 'advanced' } });
       await admin.save();
       console.log('✅ Admin account created: admin@forge.fit / Admin@123');
     }
@@ -72,8 +68,7 @@ if (cron) {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Forge Fitness API running at http://localhost:${PORT}`);
-  console.log(`👑 Admin panel: http://localhost:3000/admin`);
-  console.log(`🔑 Admin login: admin@forge.fit / Admin@123`);
+  console.log(`👑 Admin: admin@forge.fit / Admin@123`);
 });
 
 module.exports = app;
