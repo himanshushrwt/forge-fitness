@@ -79,9 +79,11 @@ router.post('/login', async (req, res) => {
       if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
       const isMatch = await user.comparePassword(password);
       if (!isMatch) return res.status(401).json({ error: 'Invalid email or password.' });
-      // Block pending/rejected users
-      if (user.approvalStatus === 'pending') return res.status(403).json({ error: 'Your account is pending admin approval. Please wait for confirmation.' });
-      if (user.approvalStatus === 'rejected') return res.status(403).json({ error: 'Your registration was not approved. Please contact support.' });
+      // Block pending/rejected users (admins always allowed)
+      if (user.role !== 'admin') {
+        if (user.approvalStatus === 'pending') return res.status(403).json({ error: 'Your account is pending admin approval. Please wait for confirmation.' });
+        if (user.approvalStatus === 'rejected') return res.status(403).json({ error: 'Your registration was not approved. Please contact support.' });
+      }
       return res.json({ token: generateToken(user), user: user.toJSON() });
     } catch (dbErr) { /* fall through to mock */ }
 
@@ -90,8 +92,11 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ error: 'Invalid email or password.' });
-    if (user.approvalStatus === 'pending') return res.status(403).json({ error: 'Your account is pending admin approval. Please wait for confirmation.' });
-    if (user.approvalStatus === 'rejected') return res.status(403).json({ error: 'Your registration was not approved. Please contact support.' });
+    // Admins bypass approval check
+    if (user.role !== 'admin') {
+      if (user.approvalStatus === 'pending') return res.status(403).json({ error: 'Your account is pending admin approval. Please wait for confirmation.' });
+      if (user.approvalStatus === 'rejected') return res.status(403).json({ error: 'Your registration was not approved. Please contact support.' });
+    }
     const { password: _p, ...userOut } = user;
     return res.json({ token: generateToken(user), user: userOut });
   } catch (err) {
