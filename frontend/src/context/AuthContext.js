@@ -29,8 +29,15 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (data) => {
     const res = await authAPI.register(data);
-    localStorage.setItem('forge_token', res.data.token);
-    setUser(res.data.user);
+    // If account is pending approval, no token is issued — return pending flag
+    if (res.data.pending) {
+      return { pending: true, user: res.data.user };
+    }
+    // Admin or auto-approved: set token and user
+    if (res.data.token) {
+      localStorage.setItem('forge_token', res.data.token);
+      setUser(res.data.user);
+    }
     return res.data.user;
   };
 

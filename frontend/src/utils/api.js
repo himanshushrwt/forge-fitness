@@ -48,21 +48,11 @@ export const trainers = {
   submitReview: (id, data) => API.post(`/trainers/${id}/review`, data),
   getSlots: (id, date) => API.get(`/trainers/${id}/slots`, { params: { date } }),
   bookSession: (id, data) => API.post(`/trainers/${id}/book`, data),
+  getMyBookings: () => API.get('/trainers/my/bookings'),
+  cancelBooking: (bookingId, reason) => API.put(`/trainers/booking/${bookingId}/cancel`, { reason }),
   verify: (id) => API.put(`/trainers/${id}/verify`),
   unverify: (id) => API.put(`/trainers/${id}/unverify`),
   remove: (id) => API.delete(`/trainers/${id}`),
-};
-
-export const bookings = {
-  getMy: () => API.get('/bookings/my'),
-  getCoachSessions: () => API.get('/bookings/coach'),
-  cancel: (id, reason) => API.put(`/bookings/${id}/cancel`, { reason }),
-};
-
-export const dietplan = {
-  get: () => API.get('/dietplan'),
-  save: (data) => API.post('/dietplan', data),
-  remind: (data) => API.post('/dietplan/remind', data),
 };
 
 export const progress = {
@@ -100,6 +90,9 @@ export const admin = {
   updateComplaint: (id, data) => API.put(`/admin/complaints/${id}`, data),
   getReviews: () => API.get('/admin/reviews'),
   deleteReview: (id) => API.delete(`/admin/reviews/${id}`),
+  getPendingRegistrations: () => API.get('/admin/registrations/pending'),
+  approveRegistration: (id, note) => API.put(`/admin/registrations/${id}/approve`, { note }),
+  rejectRegistration: (id, note) => API.put(`/admin/registrations/${id}/reject`, { note }),
 };
 
 export default API;

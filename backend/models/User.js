@@ -70,6 +70,9 @@ const UserSchema = new mongoose.Schema({
   },
 
   isActive: { type: Boolean, default: true },
+  // Approval status: 'pending' for athlete/coach registrations, 'approved' once admin approves, 'rejected'
+  approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  approvalNote: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
