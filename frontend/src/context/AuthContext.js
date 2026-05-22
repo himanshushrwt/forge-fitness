@@ -29,6 +29,9 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (data) => {
     const res = await authAPI.register(data);
+    if (res.data.pending) {
+      return { pending: true };
+    }
     localStorage.setItem('forge_token', res.data.token);
     setUser(res.data.user);
     return res.data.user;

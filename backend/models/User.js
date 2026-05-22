@@ -70,6 +70,8 @@ const UserSchema = new mongoose.Schema({
   },
 
   isActive: { type: Boolean, default: true },
+  approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  approvalNote: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

@@ -131,6 +131,7 @@ export function Register() {
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [submitted, setSubmitted] = useState(false);
 
   const updateStats = (field, value) => setForm(f => ({ ...f, stats: { ...f.stats, [field]: value } }));
   const updateCoach = (field, value) => setForm(f => ({ ...f, coachProfile: { ...f.coachProfile, [field]: value } }));
@@ -157,9 +158,13 @@ export function Register() {
     if (form.password.length < 6) return toast.error('Password must be at least 6 characters.');
     setLoading(true);
     try {
-      const user = await register(form);
-      toast.success(`Welcome to Forge, ${user.name}!`);
-      navigate('/dashboard');
+      const result = await register(form);
+      if (result && result.pending) {
+        setSubmitted(true);
+      } else {
+        toast.success(`Welcome to Forge, ${result.name}!`);
+        navigate('/dashboard');
+      }
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed.');
     } finally { setLoading(false); }
@@ -174,6 +179,31 @@ export function Register() {
     { value: 'endurance', label: 'Endurance' },
     { value: 'flexibility', label: 'Flexibility' },
   ];
+
+  if (submitted) {
+    return (
+      <AuthShell title="You're on the list!" subtitle="Pending admin approval">
+        <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', marginBottom: '0.75rem' }}>Registration Submitted!</h2>
+          <p style={{ fontSize: '0.87rem', color: 'var(--gray-600)', lineHeight: 1.7, marginBottom: '1.25rem' }}>
+            Your <strong>{form.role === 'coach' ? 'coach' : 'athlete'}</strong> account is pending admin approval.
+            You'll be able to log in once an admin activates your account.
+          </p>
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 'var(--radius-lg)', padding: '1rem', marginBottom: '1.5rem', textAlign: 'left' }}>
+            <div style={{ fontSize: '0.78rem', color: '#15803d', fontWeight: 600, marginBottom: '0.5rem' }}>What happens next?</div>
+            {['Admin reviews your registration', 'Your account gets activated', 'Log in and start training!'].map((s, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', color: '#166534', marginBottom: '0.25rem' }}>
+                <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#bbf7d0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
+                {s}
+              </div>
+            ))}
+          </div>
+          <Link to="/login" className="btn btn-primary w-full" style={{ justifyContent: 'center', display: 'flex' }}>Back to Login</Link>
+        </div>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell title={step === 1 ? 'Create account' : step === 2 ? 'Your profile' : step === 3 ? 'Your goals' : 'Coach setup'} subtitle={`Step ${step} of ${totalSteps}`}>
@@ -210,6 +240,10 @@ export function Register() {
               </div>
             ))}
           </div>
+        </div>
+        <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 'var(--radius-md)', padding: '0.75rem', marginBottom: '1rem', fontSize: '0.75rem', color: '#713f12', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+          <span>⚠️</span>
+          <span>Registrations require <strong>admin approval</strong> before you can log in.</span>
         </div>
         <button className="btn btn-primary w-full btn-lg" onClick={() => { if (!form.name || !form.email || !form.password) return toast.error('Fill all fields'); setStep(2); }} style={{ justifyContent: 'center' }}>Continue</button>
         <p style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.83rem', color: 'var(--gray-500)' }}>

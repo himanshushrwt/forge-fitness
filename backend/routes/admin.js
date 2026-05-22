@@ -10,24 +10,83 @@ let mockComplaints = [
 // ─── GET dashboard stats ───────────────────────────────────
 router.get('/stats', auth, adminOnly, async (req, res) => {
   try {
-    let totalUsers=0, totalCoaches=0, totalBookings=0, pendingComplaints=0;
+    let totalUsers=0, totalCoaches=0, totalBookings=0, pendingComplaints=0, pendingRegistrations=0;
     try {
       const User = require('../models/User');
       const Booking = require('../models/Booking');
       const Complaint = require('../models/Complaint');
-      [totalUsers, totalCoaches, totalBookings, pendingComplaints] = await Promise.all([
-        User.countDocuments({ role:'user' }),
-        User.countDocuments({ role:'coach' }),
+      [totalUsers, totalCoaches, totalBookings, pendingComplaints, pendingRegistrations] = await Promise.all([
+        User.countDocuments({ role:'user', approvalStatus:'approved' }),
+        User.countDocuments({ role:'coach', approvalStatus:'approved' }),
         Booking.countDocuments(),
-        Complaint.countDocuments({ status:'open' })
+        Complaint.countDocuments({ status:'open' }),
+        User.countDocuments({ approvalStatus:'pending' })
       ]);
     } catch {
       totalUsers=142; totalCoaches=5; totalBookings=38;
       pendingComplaints = mockComplaints.filter(c=>c.status==='open').length;
+      try { const { getMockUsers } = require('./auth'); pendingRegistrations = getMockUsers().filter(u=>u.approvalStatus==='pending').length; } catch {}
     }
-    res.json({ stats:{ totalUsers, totalCoaches, totalBookings, pendingComplaints } });
+    res.json({ stats:{ totalUsers, totalCoaches, totalBookings, pendingComplaints, pendingRegistrations } });
   } catch (err) {
     res.status(500).json({ error:'Could not fetch stats.' });
+  }
+});
+
+// ─── GET pending registrations ─────────────────────────────
+router.get('/registrations/pending', auth, adminOnly, async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const pending = await User.find({ approvalStatus:'pending' }).select('-password').sort({ createdAt:-1 });
+    return res.json({ users: pending });
+  } catch {
+    try {
+      const { getMockUsers } = require('./auth');
+      const pending = getMockUsers().filter(u => u.approvalStatus === 'pending').map(({ password: _p, ...u }) => u);
+      res.json({ users: pending });
+    } catch { res.json({ users: [] }); }
+  }
+});
+
+// ─── PUT approve registration ──────────────────────────────
+router.put('/registrations/:id/approve', auth, adminOnly, async (req, res) => {
+  try {
+    const { note = '' } = req.body;
+    try {
+      const User = require('../models/User');
+      const user = await User.findByIdAndUpdate(req.params.id, { approvalStatus:'approved', approvalNote: note }, { new:true }).select('-password');
+      if (user) return res.json({ user, message: user.name + "'s registration approved." });
+    } catch {}
+    try {
+      const { getMockUsers } = require('./auth');
+      const all = getMockUsers();
+      const idx = all.findIndex(u => u.id === req.params.id || u._id === req.params.id);
+      if (idx > -1) { all[idx].approvalStatus = 'approved'; all[idx].approvalNote = note; }
+    } catch {}
+    res.json({ message: 'Registration approved.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not approve.' });
+  }
+});
+
+// ─── PUT reject registration ───────────────────────────────
+router.put('/registrations/:id/reject', auth, adminOnly, async (req, res) => {
+  try {
+    const { note = '' } = req.body;
+    try {
+      const User = require('../models/User');
+      const user = await User.findByIdAndUpdate(req.params.id, { approvalStatus:'rejected', approvalNote: note }, { new:true }).select('-password');
+      if (user) return res.json({ user, message: user.name + "'s registration rejected." });
+    } catch {}
+    try {
+      const { getMockUsers } = require('./auth');
+      const all = getMockUsers();
+      const idx = all.findIndex(u => u.id === req.params.id || u._id === req.params.id);
+      if (idx > -1) { all[idx].approvalStatus = 'rejected'; all[idx].approvalNote = note; }
+    } catch {}
+    res.json({ message: 'Registration rejected.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not reject.' });
   }
 });
 

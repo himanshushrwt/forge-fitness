@@ -100,6 +100,9 @@ export const admin = {
   updateComplaint: (id, data) => API.put(`/admin/complaints/${id}`, data),
   getReviews: () => API.get('/admin/reviews'),
   deleteReview: (id) => API.delete(`/admin/reviews/${id}`),
+  getPendingRegistrations: () => API.get('/admin/registrations/pending'),
+  approveRegistration: (id, note) => API.put(`/admin/registrations/${id}/approve`, { note }),
+  rejectRegistration: (id, note) => API.put(`/admin/registrations/${id}/reject`, { note }),
 };
 
 export default API;
