@@ -14,91 +14,6 @@ function Stars({ rating, size=14 }) {
   );
 }
 
-// ── Slots Availability Chart ──────────────────────────────────────────────────
-function SlotsChart({ slots, availableSlots, selectedSlot, onSelect }) {
-  if (!slots.length) return null;
-  const bookedSlots = slots.filter(s => !availableSlots.includes(s));
-  const availCount = availableSlots.length;
-  const bookedCount = bookedSlots.length;
-  const total = slots.length;
-  const availPct = total ? Math.round((availCount / total) * 100) : 0;
-
-  return (
-    <div style={{ marginBottom:'1.25rem' }}>
-      {/* Chart header */}
-      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.625rem' }}>
-        <label className="form-label" style={{ margin:0 }}>Slot Availability Chart</label>
-        <div style={{ display:'flex',gap:'0.875rem',fontSize:'0.7rem' }}>
-          <span style={{ display:'flex',alignItems:'center',gap:'0.3rem' }}>
-            <span style={{ width:10,height:10,borderRadius:2,background:'#22c55e',display:'inline-block' }}/>
-            Available ({availCount})
-          </span>
-          <span style={{ display:'flex',alignItems:'center',gap:'0.3rem' }}>
-            <span style={{ width:10,height:10,borderRadius:2,background:'#ef4444',display:'inline-block' }}/>
-            Booked ({bookedCount})
-          </span>
-        </div>
-      </div>
-
-      {/* Horizontal bar chart */}
-      <div style={{ background:'var(--gray-50)',border:'1px solid var(--gray-200)',borderRadius:'var(--radius-lg)',padding:'0.875rem',marginBottom:'0.875rem' }}>
-        {/* Overall bar */}
-        <div style={{ marginBottom:'0.625rem' }}>
-          <div style={{ display:'flex',justifyContent:'space-between',fontSize:'0.7rem',color:'var(--gray-500)',marginBottom:'0.25rem' }}>
-            <span>Overall capacity</span>
-            <span style={{ color: availPct > 50 ? '#16a34a' : availPct > 25 ? '#d97706' : '#dc2626', fontWeight:600 }}>
-              {availPct}% available
-            </span>
-          </div>
-          <div style={{ height:8,background:'var(--gray-200)',borderRadius:4,overflow:'hidden' }}>
-            <div style={{ height:'100%',width:`${availPct}%`,background:'linear-gradient(90deg,#22c55e,#16a34a)',borderRadius:4,transition:'width 0.6s ease' }}/>
-          </div>
-        </div>
-
-        {/* Per-slot mini bars */}
-        <div style={{ display:'grid',gridTemplateColumns:`repeat(${Math.min(slots.length, 6)},1fr)`,gap:'0.3rem' }}>
-          {slots.map(slot => {
-            const isAvail = availableSlots.includes(slot);
-            const isSelected = selectedSlot === slot;
-            return (
-              <div key={slot}
-                onClick={() => isAvail && onSelect(slot)}
-                style={{ textAlign:'center',cursor:isAvail?'pointer':'default' }}
-                title={isAvail ? `Book ${slot}` : `${slot} — Booked`}>
-                {/* Bar */}
-                <div style={{ height:36,background:isSelected?'#2563eb':isAvail?'#22c55e':'#ef4444',borderRadius:'var(--radius-sm)',opacity:isSelected?1:isAvail?0.8:0.4,border:isSelected?'2px solid #1d4ed8':'2px solid transparent',transition:'all 0.15s',display:'flex',alignItems:'flex-end',justifyContent:'center',paddingBottom:'3px',boxShadow:isSelected?'0 0 0 3px rgba(37,99,235,0.25)':'none' }}>
-                  {isSelected && <span style={{ fontSize:'0.5rem',color:'white',fontWeight:700 }}>✓</span>}
-                  {!isAvail && <span style={{ fontSize:'0.5rem',color:'white',fontWeight:700 }}>✗</span>}
-                </div>
-                {/* Time label */}
-                <div style={{ fontSize:'0.55rem',color:isSelected?'var(--accent-primary)':isAvail?'var(--gray-600)':'var(--gray-400)',marginTop:'0.2rem',fontWeight:isSelected?700:400,lineHeight:1.2 }}>
-                  {slot.replace(' AM','a').replace(' PM','p')}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Clickable slot grid (the original, now below chart) */}
-      <label className="form-label">Select a Time Slot</label>
-      <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'0.4rem' }}>
-        {slots.map(slot => {
-          const isAvail = availableSlots.includes(slot);
-          return (
-            <button key={slot} onClick={() => isAvail && onSelect(slot)} disabled={!isAvail}
-              style={{ padding:'0.55rem',borderRadius:'var(--radius-md)',border:`1.5px solid ${selectedSlot===slot?'var(--accent-primary)':isAvail?'var(--gray-200)':'var(--gray-100)'}`,background:selectedSlot===slot?'var(--brand-50)':isAvail?'var(--gray-0)':'var(--gray-50)',color:isAvail?selectedSlot===slot?'var(--accent-primary)':'var(--gray-700)':'var(--gray-300)',fontSize:'0.75rem',fontWeight:500,cursor:isAvail?'pointer':'not-allowed',transition:'all 0.15s' }}>
-              {slot}
-              {!isAvail && <div style={{ fontSize:'0.6rem',color:'#ef4444' }}>Booked</div>}
-              {isAvail && selectedSlot===slot && <div style={{ fontSize:'0.6rem',color:'var(--accent-primary)' }}>Selected</div>}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // ── Booking Modal ─────────────────────────────────────────────────────────────
 function BookingModal({ trainer, onClose }) {
   const [step, setStep] = useState(1);
@@ -123,14 +38,12 @@ function BookingModal({ trainer, onClose }) {
       setSlots(res.data.slots||[]);
       setAvailableSlots(res.data.available||[]);
     } catch {
+      // Mock slots based on day of week
       const dayName = new Date(date+'T12:00:00').toLocaleString('en-US',{weekday:'long'});
       const avail = cp.availability||[];
       if (avail.includes(dayName)) {
         const mockSlots = cp.timeSlots||['08:00 AM','09:00 AM','10:00 AM','03:00 PM','04:00 PM','05:00 PM'];
-        // Simulate 1-2 random bookings for realism
-        const randomBooked = mockSlots.filter((_,i) => i === 1);
-        setSlots(mockSlots);
-        setAvailableSlots(mockSlots.filter(s => !randomBooked.includes(s)));
+        setSlots(mockSlots); setAvailableSlots(mockSlots);
       } else { setSlots([]); setAvailableSlots([]); }
     } finally { setLoading(false); }
   };
@@ -155,7 +68,7 @@ function BookingModal({ trainer, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth:540 }} onClick={e=>e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth:520 }} onClick={e=>e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}><IconX size={14}/></button>
 
         {booked ? (
@@ -189,10 +102,10 @@ function BookingModal({ trainer, onClose }) {
               ))}
             </div>
 
-            {/* Step 1: Pick date + chart */}
+            {/* Step 1: Pick date */}
             {step===1 && (
               <>
-                <h4 style={{ marginBottom:'0.875rem' }}>Step 1 — Choose a Date & Time</h4>
+                <h4 style={{ marginBottom:'0.875rem' }}>Step 1 — Choose a Date</h4>
                 <div style={{ marginBottom:'1rem' }}>
                   <label className="form-label">Select Date</label>
                   <input type="date" min={minDate} max={maxDate} value={selectedDate}
@@ -200,22 +113,32 @@ function BookingModal({ trainer, onClose }) {
                     style={{ cursor:'pointer' }}/>
                   {selectedDate && !dayIsAvailable(selectedDate) && (
                     <p style={{ fontSize:'0.78rem',color:'var(--red-500)',marginTop:'0.35rem' }}>
-                      {trainer.name.split(' ')[0]} is not available on this day. Available days: {(cp.availability||[]).join(', ')}
+                      {trainer.name.split(' ')[0]} is not available on this day. Available: {(cp.availability||[]).join(', ')}
                     </p>
                   )}
                 </div>
-                {loading && <div className="spinner" style={{ width:20,height:20,marginBottom:'1rem' }}/>}
-                {selectedDate && dayIsAvailable(selectedDate) && !loading && (
-                  slots.length === 0 ? (
-                    <p style={{ fontSize:'0.83rem',color:'var(--gray-400)',marginBottom:'1rem' }}>No slots available for this date.</p>
-                  ) : (
-                    <SlotsChart
-                      slots={slots}
-                      availableSlots={availableSlots}
-                      selectedSlot={selectedSlot}
-                      onSelect={setSelectedSlot}
-                    />
-                  )
+                {selectedDate && dayIsAvailable(selectedDate) && (
+                  <div style={{ marginBottom:'1rem' }}>
+                    <label className="form-label">Available Time Slots</label>
+                    {loading ? <div className="spinner" style={{ width:20,height:20 }}/> : (
+                      availableSlots.length===0 ? (
+                        <p style={{ fontSize:'0.83rem',color:'var(--gray-400)' }}>No slots available for this date.</p>
+                      ) : (
+                        <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'0.4rem' }}>
+                          {slots.map(slot=>{
+                            const isAvail = availableSlots.includes(slot);
+                            return (
+                              <button key={slot} onClick={()=>isAvail&&setSelectedSlot(slot)} disabled={!isAvail}
+                                style={{ padding:'0.55rem',borderRadius:'var(--radius-md)',border:`1.5px solid ${selectedSlot===slot?'var(--accent-primary)':isAvail?'var(--gray-200)':'var(--gray-100)'}`,background:selectedSlot===slot?'var(--brand-50)':isAvail?'var(--gray-0)':'var(--gray-50)',color:isAvail?selectedSlot===slot?'var(--accent-primary)':'var(--gray-700)':'var(--gray-300)',fontSize:'0.75rem',fontWeight:500,cursor:isAvail?'pointer':'not-allowed',transition:'all 0.15s' }}>
+                                {slot}
+                                {!isAvail && <div style={{ fontSize:'0.6rem',color:'var(--gray-300)' }}>Booked</div>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )
+                    )}
+                  </div>
                 )}
                 <button className="btn btn-primary w-full" disabled={!selectedDate||!selectedSlot} onClick={()=>setStep(2)} style={{ justifyContent:'center' }}>
                   Continue
