@@ -43,7 +43,10 @@ function BookingModal({ trainer, onClose }) {
       const avail = cp.availability||[];
       if (avail.includes(dayName)) {
         const mockSlots = cp.timeSlots||['08:00 AM','09:00 AM','10:00 AM','03:00 PM','04:00 PM','05:00 PM'];
-        setSlots(mockSlots); setAvailableSlots(mockSlots);
+        // Simulate 1 already-booked slot so occupied slots show in red
+        const mockBooked = [mockSlots[1]];
+        setSlots(mockSlots);
+        setAvailableSlots(mockSlots.filter(s => !mockBooked.includes(s)));
       } else { setSlots([]); setAvailableSlots([]); }
     } finally { setLoading(false); }
   };
@@ -110,7 +113,7 @@ function BookingModal({ trainer, onClose }) {
                   <label className="form-label">Select Date</label>
                   <input type="date" min={minDate} max={maxDate} value={selectedDate}
                     onChange={e=>fetchSlots(e.target.value)}
-                    style={{ cursor:'pointer' }}/>
+                    style={{ cursor:'pointer', borderColor: selectedDate && !dayIsAvailable(selectedDate) ? '#ef4444' : undefined, boxShadow: selectedDate && !dayIsAvailable(selectedDate) ? '0 0 0 3px rgba(239,68,68,0.15)' : undefined }}/>
                   {selectedDate && !dayIsAvailable(selectedDate) && (
                     <p style={{ fontSize:'0.78rem',color:'var(--red-500)',marginTop:'0.35rem' }}>
                       {trainer.name.split(' ')[0]} is not available on this day. Available: {(cp.availability||[]).join(', ')}
@@ -127,11 +130,23 @@ function BookingModal({ trainer, onClose }) {
                         <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'0.4rem' }}>
                           {slots.map(slot=>{
                             const isAvail = availableSlots.includes(slot);
+                            const isSelected = selectedSlot === slot;
                             return (
                               <button key={slot} onClick={()=>isAvail&&setSelectedSlot(slot)} disabled={!isAvail}
-                                style={{ padding:'0.55rem',borderRadius:'var(--radius-md)',border:`1.5px solid ${selectedSlot===slot?'var(--accent-primary)':isAvail?'var(--gray-200)':'var(--gray-100)'}`,background:selectedSlot===slot?'var(--brand-50)':isAvail?'var(--gray-0)':'var(--gray-50)',color:isAvail?selectedSlot===slot?'var(--accent-primary)':'var(--gray-700)':'var(--gray-300)',fontSize:'0.75rem',fontWeight:500,cursor:isAvail?'pointer':'not-allowed',transition:'all 0.15s' }}>
+                                style={{
+                                  padding:'0.55rem',
+                                  borderRadius:'var(--radius-md)',
+                                  border:`1.5px solid ${isSelected?'var(--accent-primary)':isAvail?'var(--gray-200)':'#fca5a5'}`,
+                                  background: isSelected?'var(--brand-50)':isAvail?'var(--gray-0)':'#fff1f1',
+                                  color: isSelected?'var(--accent-primary)':isAvail?'var(--gray-700)':'#dc2626',
+                                  fontSize:'0.75rem',
+                                  fontWeight: isAvail?500:600,
+                                  cursor:isAvail?'pointer':'not-allowed',
+                                  transition:'all 0.15s'
+                                }}>
                                 {slot}
-                                {!isAvail && <div style={{ fontSize:'0.6rem',color:'var(--gray-300)' }}>Booked</div>}
+                                {!isAvail && <div style={{ fontSize:'0.6rem',color:'#ef4444',marginTop:'1px' }}>● Booked</div>}
+                                {isAvail && isSelected && <div style={{ fontSize:'0.6rem',color:'var(--accent-primary)',marginTop:'1px' }}>✓ Selected</div>}
                               </button>
                             );
                           })}
