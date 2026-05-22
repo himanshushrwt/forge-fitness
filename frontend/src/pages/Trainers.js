@@ -540,7 +540,7 @@ export default function Trainers() {
         </div>
       </div>
 
-      {selected && <TrainerModal trainer={selected} onClose={()=>setSelected(null)} onBook={(t)=>{ setSelected(null); setBookingTrainer(t); }}/>
+      {selected && <TrainerModal trainer={selected} onClose={()=>setSelected(null)} onBook={(t)=>{ setSelected(null); setBookingTrainer(t); }}/>}
       {bookingTrainer && <BookingModal trainer={bookingTrainer} onClose={()=>setBookingTrainer(null)}/>}
       {complaintTrainer && <ComplaintModal trainer={complaintTrainer} onClose={()=>setComplaintTrainer(null)}/>}
     </div>
